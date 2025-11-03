@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#f3f4f6" />
+		<script>
+			(function () {
+				try {
+					var stored = localStorage.getItem('theme');
+					var prefersDark =
+						window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+					var useDark = stored ? stored === 'dark' : prefersDark;
+					if (useDark) document.documentElement.classList.add('dark');
+					var meta = document.querySelector('meta[name="theme-color"]');
+					if (meta) meta.setAttribute('content', useDark ? '#0f172a' : '#f3f4f6');
+				} catch (e) {}
+			})();
+		</script>
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<title>Handy Companion</title>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

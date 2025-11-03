@@ -1,0 +1,11 @@
+{
+    "name": "Handy Companion",
+    "short_name": "HCompanion",
+    "start_url": ".",
+    "scope": ".",
+    "display": "standalone",
+    "background_color": "#0ea5e9",
+    "theme_color": "#0ea5e9",
+    "description": "Your hands-free helper.",
+    "icons": []
+}
