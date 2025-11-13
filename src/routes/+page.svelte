@@ -119,8 +119,8 @@
 							checkExpr: seg.checkExpr || ''
 						};
 					}
-					if (seg.kind === 'set') {
-						return { kind: 'set', code: seg.code || '' };
+					if (seg.kind === 'js') {
+						return { kind: 'js', code: seg.code || '' };
 					}
 					if (seg.kind === 'pause') {
 						return { kind: 'pause', seconds: seg.seconds || 0, checkExpr: seg.checkExpr || '' };
@@ -242,8 +242,8 @@
 					});
 					continue;
 				}
-				if (item.kind === 'set') {
-					newArrangement.push({ id: genId(), kind: 'set', code: String(item.code || '') });
+				if (item.kind === 'js') {
+					newArrangement.push({ id: genId(), kind: 'js', code: String(item.code || '') });
 					continue;
 				}
 				if (item.kind === 'pause') {
@@ -283,9 +283,9 @@
 				const actions = [];
 				for (const a of kb.actions || []) {
 					if (!a || typeof a !== 'object' || !a.type) continue;
-					if (a.type === 'set')
+					if (a.type === 'js')
 						actions.push({
-							type: 'set',
+							type: 'js',
 							code: String(a.code || ''),
 							checkExpr: (a.checkExpr || '').trim()
 						});
@@ -334,7 +334,7 @@
 	/** @typedef {{ id:string, kind:'script', file: File }} ArrangementScriptSegment */
 	/** @typedef {{ id:string, kind:'jump', targetIndex: number, checkExpr?: string }} ArrangementJumpSegment */
 	/** @typedef {{ id:string, kind:'repeat', times: number, fromIndex: number, checkExpr?: string }} ArrangementRepeatSegment */
-	/** @typedef {{ id:string, kind:'set', code: string }} ArrangementSetVarSegment */
+	/** @typedef {{ id:string, kind:'js', code: string }} ArrangementSetVarSegment */
 	/** @typedef {{ id:string, kind:'pause', seconds:number, checkExpr?: string }} ArrangementPauseSegment */
 	/** @typedef {{ id:string, kind:'custom', speed:number, length:number, speedInc:number, lengthInc:number, randomize:boolean, randomFreq:number, freqVar:number, speedVar:number, strokeVar:number }} ArrangementCustomSegment */
 	/** @typedef {(ArrangementMediaSegment|ArrangementScriptSegment|ArrangementJumpSegment|ArrangementRepeatSegment|ArrangementSetVarSegment|ArrangementPauseSegment|ArrangementCustomSegment)} ArrangementSegment */
@@ -343,7 +343,7 @@
 	let arrangement = [];
 
 	// Keybind types
-	/** @typedef {{ type:'set', code:string, checkExpr?: string } | { type:'goto', random?: boolean, targetIndex?: number, checkExpr?: string } | { type:'skip', amount:number, checkExpr?: string } | { type:'pause', seconds:number, checkExpr?: string }} KeyAction */
+	/** @typedef {{ type:'js', code:string, checkExpr?: string } | { type:'goto', random?: boolean, targetIndex?: number, checkExpr?: string } | { type:'skip', amount:number, checkExpr?: string } | { type:'pause', seconds:number, checkExpr?: string }} KeyAction */
 	/** @typedef {{ id:string, combo:string, actions: KeyAction[] }} Keybind */
 	/** @type {Keybind[]} */
 	let keybinds = [];
@@ -395,7 +395,7 @@
 	function addAction(kbIdx) {
 		const kb = keybinds[kbIdx];
 		if (!kb) return;
-		kb.actions.push({ type: 'set', code: '' });
+		kb.actions.push({ type: 'js', code: '' });
 		keybinds = keybinds; // trigger
 	}
 	/** @param {number} kbIdx @param {number} aIdx */
@@ -405,14 +405,13 @@
 		kb.actions.splice(aIdx, 1);
 		keybinds = keybinds;
 	}
-	/** @param {number} kbIdx @param {number} aIdx @param {'set'|'goto'|'skip'|'pause'} newType */
+	/** @param {number} kbIdx @param {number} aIdx @param {'js'|'goto'|'skip'|'pause'} newType */
 	function changeActionType(kbIdx, aIdx, newType) {
 		const kb = keybinds[kbIdx];
 		if (!kb) return;
 		/** @type {KeyAction} */
 		let next;
-		if (newType === 'set')
-			next = /** @type {KeyAction} */ ({ type: 'set', code: '', checkExpr: '' });
+		if (newType === 'js') next = /** @type {KeyAction} */ ({ type: 'js', code: '', checkExpr: '' });
 		else if (newType === 'goto')
 			next = /** @type {KeyAction} */ ({
 				type: 'goto',
@@ -528,7 +527,7 @@
 	}
 
 	// Arrangement builder state
-	/** @type {'video'|'audio'|'image'|'script'|'jump'|'repeat'|'set'|'pause'|'custom'} */
+	/** @type {'video'|'audio'|'image'|'script'|'jump'|'repeat'|'js'|'pause'|'custom'} */
 	let addType = 'video';
 	let addMediaIndex = -1; // index within the selected media list
 	let addScriptIndex = -1; // index within scripts
@@ -610,12 +609,10 @@
 			// default to repeat starting from the previous segment (1-based index), or 1 if empty
 			const fromIndex = Math.max(1, arrangement.length);
 			arrangement = [...arrangement, { id: genId(), kind: 'repeat', times, fromIndex }];
-		} else if (addType === 'set') {
+		} else if (addType === 'js') {
 			const code = (addSetCode || '').trim();
-			if (code) {
-				arrangement = [...arrangement, { id: genId(), kind: 'set', code }];
-				addSetCode = '';
-			}
+			arrangement = [...arrangement, { id: genId(), kind: 'js', code }];
+			addSetCode = '';
 		} else if (addType === 'pause') {
 			const seconds = Math.max(0, addPauseSeconds | 0);
 			arrangement = [
@@ -929,7 +926,7 @@
 			for (const act of kb.actions) {
 				// Guard each action with optional check expression
 				if (act.checkExpr && !evalCheck(act.checkExpr)) continue;
-				if (act.type === 'set') {
+				if (act.type === 'js') {
 					if (act.code?.trim()) evalCode(act.code);
 				} else if (act.type === 'goto') {
 					let target = act.random
@@ -982,7 +979,7 @@
 		while (playing && currentIndex >= 0 && currentIndex < arrangement.length) {
 			segmentAbort.aborted = false;
 			const seg = arrangement[currentIndex];
-			if (seg.kind === 'set') {
+			if (seg.kind === 'js') {
 				if (seg.code?.trim()) evalCode(seg.code);
 				currentIndex++;
 				continue;
@@ -1275,7 +1272,6 @@
 			>{isDark ? 'Light' : 'Dark'}</button
 		>
 	</div>
-	<p class="tagline">Your hands-free helper.</p>
 </header>
 
 <main class="app-main">
@@ -1285,7 +1281,7 @@
 			<div id="handy-ui"></div>
 		</li>
 		<li>
-			<h3>Configure playlist</h3>
+			<h3>Add files</h3>
 			<div class="row">
 				<button type="button" class="secondary" on:click={openFilePicker}>Choose files…</button>
 				<input
@@ -1365,7 +1361,7 @@
 					{/if}
 				</div>
 			{/if}
-			<h4>Arrange</h4>
+			<h3>Layout</h3>
 			<div class="arrange-builder">
 				{#if arrangement.length}
 					<ol class="arrangement-list">
@@ -1539,16 +1535,16 @@
 								{:else if seg.kind === 'jump'}
 									<div class="seg-body">
 										<div class="pill control">jump</div>
-										<label
-											>Target index <input
-												type="number"
-												min="1"
-												bind:value={seg.targetIndex}
-											/></label
-										>
 										<div class="row">
 											<label
-												>Check expression (JS, optional)
+												>Target index <input
+													type="number"
+													min="1"
+													bind:value={seg.targetIndex}
+												/></label
+											>
+											<label
+												>Guard condition
 												<input
 													type="text"
 													placeholder="e.g. counter === 1 or score > 10"
@@ -1560,17 +1556,17 @@
 								{:else if seg.kind === 'repeat'}
 									<div class="seg-body">
 										<div class="pill control">repeat</div>
-										<label>Times <input type="number" min="1" bind:value={seg.times} /></label>
-										<label
-											>From index <input type="number" min="1" bind:value={seg.fromIndex} /></label
-										>
-										<div class="hint">
-											Repeats from the given 1-based index back to here, the specified number of
-											times.
-										</div>
 										<div class="row">
+											<label>Times <input type="number" min="1" bind:value={seg.times} /></label>
 											<label
-												>Check expression (JS, optional)
+												>From index <input
+													type="number"
+													min="1"
+													bind:value={seg.fromIndex}
+												/></label
+											>
+											<label
+												>Guard condition
 												<input
 													type="text"
 													placeholder="e.g. i < 3 or flag === true"
@@ -1578,20 +1574,20 @@
 												/>
 											</label>
 										</div>
-									</div>
-								{:else if seg.kind === 'set'}
-									<div class="seg-body">
-										<div class="pill control">set / run JS</div>
-										<div class="row">
-											<label class="grow">
-												JS to execute
-												<textarea
-													rows="3"
-													placeholder="e.g. counter = (counter ?? 0) + 1;"
-													bind:value={seg.code}
-												></textarea>
-											</label>
+										<div class="hint">
+											Repeats from the given 1-based index back to here, the specified number of
+											times.
 										</div>
+									</div>
+								{:else if seg.kind === 'js'}
+									<div class="seg-body">
+										<div class="pill control">Execute JS</div>
+										<label class="grow">
+											<input
+												placeholder="e.g. counter = (counter ?? 0) + 1;"
+												bind:value={seg.code}
+											/>
+										</label>
 									</div>
 								{:else if seg.kind === 'pause'}
 									<div class="seg-body">
@@ -1602,7 +1598,7 @@
 												<input type="number" min="0" step="0.1" bind:value={seg.seconds} />
 											</label>
 											<label class="grow">
-												Check expression (JS, optional)
+												Guard condition
 												<input
 													type="text"
 													placeholder="e.g. flag === true"
@@ -1700,7 +1696,7 @@
 							<option value="script">Script</option>
 							<option value="jump">Control: Jump To</option>
 							<option value="repeat">Control: Repeat</option>
-							<option value="set">Control: Execute JS</option>
+							<option value="js">Control: Execute JS</option>
 							<option value="pause">Control: Pause</option>
 							<option value="custom">Control: Custom movement</option>
 						</select>
@@ -1746,35 +1742,11 @@
 								{/each}
 							</select>
 						</label>
-					{:else if addType === 'jump'}
-						<label>
-							Target index
-							<input type="number" min="1" bind:value={addJumpTarget} />
-						</label>
-					{:else if addType === 'repeat'}
-						<label>
-							Times
-							<input type="number" min="1" bind:value={addRepeatTimes} />
-						</label>
-					{:else if addType === 'set'}
-						<label class="grow">
-							<textarea
-								rows="2"
-								placeholder="e.g. counter = (counter ?? 0) + 1;"
-								bind:value={addSetCode}
-							></textarea>
-						</label>
-					{:else if addType === 'pause'}
-						<label>
-							Seconds
-							<input type="number" min="0" step="0.1" bind:value={addPauseSeconds} />
-						</label>
-						<label class="grow">
-							Check expression (optional)
-							<input type="text" placeholder="e.g. ready === true" bind:value={addPauseCheck} />
-						</label>
 					{/if}
 
+					<br />
+				</div>
+				<div>
 					<button type="button" class="primary" on:click={addSegment}>Add</button>
 					<button
 						type="button"
@@ -1784,7 +1756,7 @@
 					>
 				</div>
 			</div>
-			<h4>Keybinds</h4>
+			<h3>Keybinds</h3>
 
 			<div class="keybinds">
 				{#if keybinds.length}
@@ -1793,8 +1765,7 @@
 							<li class="kb-item">
 								<div class="kb-head">
 									<strong>{kb.combo}</strong>
-									<button type="button" class="danger" on:click={() => removeKeybind(kbi)}
-										>Remove</button
+									<button type="button" class="danger" on:click={() => removeKeybind(kbi)}>x</button
 									>
 								</div>
 								<div class="kb-actions">
@@ -1808,21 +1779,21 @@
 														on:change={(e) =>
 															changeActionType(kbi, ai, /** @type {any} */ (e.currentTarget).value)}
 													>
-														<option value="set">Execute JS</option>
+														<option value="js">Execute JS</option>
 														<option value="goto">Jump To</option>
 														<option value="skip">Skip</option>
 														<option value="pause">Pause</option>
 													</select>
 												</label>
 
-												{#if act.type === 'set'}
+												{#if act.type === 'js'}
 													<label class="grow">
 														JS code
-														<textarea
-															rows="2"
+														<input
+															type="text"
 															placeholder="counter = (counter ?? 0) + 1;"
 															bind:value={act.code}
-														></textarea>
+														/>
 													</label>
 													<label class="grow">
 														Check expression (optional)
@@ -1907,13 +1878,6 @@
 						on:click={startRecordingKey}
 						disabled={recordingKey}>{recordingKey ? 'Press a key…' : 'Record key'}</button
 					>
-					<input
-						class="combo-display"
-						type="text"
-						placeholder="Recorded combo"
-						readonly
-						value={recordedCombo}
-					/>
 				</div>
 			</div>
 		</li>
@@ -2040,22 +2004,13 @@
 		background: var(--bg);
 	}
 
-	h4 {
-		margin: 1rem 0 0.5rem;
-		font-size: 1rem;
-	}
-
 	/* item layout styling is handled inside item components */
 
 	.arrange-builder {
 		margin-top: 0.5rem;
-		padding: 1rem;
-		border: 0.1rem solid var(--panel-border);
-		border-radius: 0.5rem;
-		background: var(--panel-bg);
 	}
 	.arrange-add {
-		flex-direction: column;
+		align-items: center;
 	}
 	.row {
 		display: flex;
@@ -2110,10 +2065,6 @@
 		border: 0.1rem solid var(--panel-border);
 		border-radius: 0.5rem;
 		background: var(--panel-bg);
-
-		&:hover {
-			filter: brightness(1.3);
-		}
 	}
 	.seg-head {
 		background-color: var(--secondary-bg);
@@ -2128,6 +2079,9 @@
 	}
 	.seg-body {
 		padding: 1rem;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
 	}
 	.pill {
 		display: inline-block;
@@ -2172,17 +2126,6 @@
 	/* keybinds */
 	.keybinds {
 		margin-top: 0.5rem;
-		padding: 1rem;
-		border: 0.1rem solid var(--panel-border);
-		border-radius: 0.5rem;
-		background: var(--panel-bg);
-	}
-	.combo-display {
-		flex: 1 1 auto;
-		padding: 0.5rem 1rem;
-		border: 0.1rem solid var(--panel-border);
-		border-radius: 0.5rem;
-		background: var(--muted-bg);
 	}
 	.kb-list {
 		list-style: none;
@@ -2279,6 +2222,7 @@
 
 	ul,
 	ol {
+		list-style: none;
 		padding: 0;
 		margin: 0;
 		display: flex;
@@ -2321,11 +2265,15 @@
 		align-items: flex-start;
 	}
 
+	input,
+	button,
+	select {
+		transition: filter 0.1s ease-out;
+	}
 	/* form controls */
 	input:hover,
 	button:hover,
-	select:hover,
-	textarea:hover {
+	select:hover {
 		filter: brightness(1.3);
 	}
 	button:not(.primary):not(.secondary):not(.danger) {
@@ -2337,8 +2285,7 @@
 		cursor: pointer;
 	}
 	input:not([type='checkbox']):not([type='radio']):not([type='range']),
-	select,
-	textarea {
+	select {
 		font: inherit;
 		color: var(--text);
 		background: var(--panel-bg);
@@ -2346,21 +2293,18 @@
 		border-radius: 0.5rem;
 		padding: 0.5rem 1rem;
 	}
-	input::placeholder,
-	textarea::placeholder {
+	input::placeholder {
 		color: inherit;
 		opacity: 0.7;
 	}
 	input:focus,
-	select:focus,
-	textarea:focus {
+	select:focus {
 		outline: 0.1rem solid var(--primary);
 		outline-offset: 0.1rem;
 		border-color: var(--primary);
 	}
 	input[disabled],
 	select[disabled],
-	textarea[disabled],
 	button[disabled] {
 		opacity: 0.6;
 		cursor: not-allowed;
@@ -2371,8 +2315,7 @@
 	}
 	/* make controls inside a flex grow label fill width */
 	.row .grow input,
-	.row .grow select,
-	.row .grow textarea {
+	.row .grow select {
 		width: 100%;
 	}
 </style>
