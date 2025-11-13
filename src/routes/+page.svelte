@@ -1266,10 +1266,14 @@
 </script>
 
 <header class="app-header">
+	<h1 class="grow">Handy Companion</h1>
 	<div class="row">
-		<h1 class="grow">Handy Companion</h1>
+		<button type="button" class="secondary" on:click={exportConfig}>Export config</button>
+		<button type="button" class="secondary" on:click={() => importConfigEl?.click()}
+			>Import config</button
+		>
 		<button type="button" class="secondary" on:click={toggleTheme}
-			>{isDark ? 'Light' : 'Dark'}</button
+			>Switch {isDark ? 'light' : 'dark'}mode</button
 		>
 	</div>
 </header>
@@ -1277,13 +1281,12 @@
 <main class="app-main">
 	<ol>
 		<li>
-			<h3>Connect to your device</h3>
 			<div id="handy-ui"></div>
 		</li>
 		<li>
 			<h3>Add files</h3>
 			<div class="row">
-				<button type="button" class="secondary" on:click={openFilePicker}>Choose files…</button>
+				<button type="button" class="secondary" on:click={openFilePicker}>Add files...</button>
 				<input
 					style="display: none"
 					type="file"
@@ -1292,12 +1295,7 @@
 					on:change={handleFilesChange}
 					bind:this={filePickerEl}
 				/>
-				<button type="button" class="secondary" on:click={exportConfig}
-					>Export arrangement & keybinds</button
-				>
-				<button type="button" class="secondary" on:click={() => importConfigEl?.click()}
-					>Import arrangement & keybinds</button
-				>
+
 				<input
 					style="display: none"
 					type="file"
@@ -2013,6 +2011,7 @@
 		align-items: center;
 	}
 	.row {
+		flex-wrap: wrap;
 		display: flex;
 		gap: 0.5rem;
 		margin: 0.5rem 0;
@@ -2029,15 +2028,15 @@
 		background: var(--primary);
 		color: var(--primary-contrast);
 		border: none;
-		padding: 0.5rem 1rem;
+		padding: 0.7rem 1rem;
 		border-radius: 0.5rem;
 		cursor: pointer;
 	}
 	.secondary {
 		background: var(--secondary-bg);
 		color: var(--secondary-text);
-		border: 0.1rem solid var(--secondary-border);
-		padding: 0.5rem 1rem;
+		border: none;
+		padding: 0.7rem 1rem;
 		border-radius: 0.5rem;
 		cursor: pointer;
 	}
@@ -2073,6 +2072,12 @@
 		align-items: center;
 		padding: 0.5rem 1rem;
 		border-bottom: 0.1rem solid var(--muted-border);
+	}
+	.seg-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		justify-content: flex-end;
 	}
 	.seg-actions button {
 		margin-left: 0.5rem;
@@ -2149,6 +2154,7 @@
 		border-bottom: 0.1rem solid var(--muted-border);
 	}
 	.kb-actions {
+		flex-wrap: wrap;
 		padding: 1rem;
 		display: flex;
 		flex-direction: column;
